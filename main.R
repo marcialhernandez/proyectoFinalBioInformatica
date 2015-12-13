@@ -47,32 +47,46 @@ for (nombreProbe in colnames(dataComplete.affy)){
 #Se ha renonmbrado las clases, quedando todos los grupos con nombres comunes
 colnames(dataComplete.affy) <- nombresClases
 #Se obtiene una lista sin repeticiones del nombre de las clases
-nombresClases<-unique(nombresClases)
-matrizUbicacionesClases=c()
-for (nombreClase in nombresClases){
+nombresClasesSinRepeticion<-unique(nombresClases)
+matrizUbicacionesClases<- c()
+contador<-1
+for (nombreClase in nombresClasesSinRepeticion){
   vectorTemporal <- which(colnames(dataComplete.affy)==nombreClase)
   #print(vectorTemporal)
-  matrizUbicacionesClases<-c(matrizUbicacionesClases,vectorTemporal)
+  #matrizUbicacionesClases<-c(matrizUbicacionesClases,vectorTemporal)
+  matrizUbicacionesClases[[contador]]<-vectorTemporal
+  contador<-contador+1
 }
-#Proceso de diferenciacion multiclase usando Kruskall-Wallis
+#print (matrizUbicacionesClases)
+#Proceso de ordenamiento multiclase usando Kruskall.test
 pvalue<-0
-
-for(a in 1:cantidadGenes) {
+cantidadOK<-0
+for(filaGen in 1:cantidadGenes) {
   
-  mat_exp_t<-c()
-  for (posClases in  matrizUbicacionesClases){
-    if (a==1){
-    #print (dataComplete.affy[posClases])
-    }
-    c(mat_exp_t, dataComplete.affy[a,posClases])
-    
+  #mat_exp_t<-0
+  tabla<-list()
+  contador<-1
+  for (clase in nombresClasesSinRepeticion){
+    tabla[[nombresClasesSinRepeticion[contador]]]<-dataComplete.affy[filaGen,][matrizUbicacionesClases[[contador]]]
+    #tabla<-setNames(c(dataComplete.affy[filaGen,][matrizUbicacionesClases[[contador]]]),nombresClases[contador])
+    #mat_exp_t[[contador]]<-dataComplete.affy[filaGen,][matrizUbicacionesClases[[contador]]]
+    contador<-contador+1
   }
-  tabla<-data.frame(cbind(mat_exp_t,nombresClases))
-  pvalue[a]<-kruskal.test(tabla[,1]~nombresClases,data=tabla)$p.value
+
+  pvalue[filaGen]<-kruskal.test(tabla)$p.value
+  if (pvalue[filaGen]<0.05){
+    #print (pvalue[filaGen])
+    cantidadOK<-cantidadOK+1
+  }
 }
+print (paste("Cantidad de datos con pvalue < 0.05: ",cantidadOK))
 
-dataComplete.affyOrdenada<-dataComplete.affy[order(pvalue),]
-#dataComplete.affyOrdenada<-dataComplete.affy[order(pvalue)]
-#pvalue<-pvalue[order(pvalue)]
+#Proceso de ordenamiento por pValue
+#Falta ordenar segun el pvalue obtenido, el metodo comentado no funciona
+#probes<-dataComplete.affy[order(pvalue)]
 
-#print(length(which(pvalue<=0.05)))
+#Proceso de diferenciacion multiclase usando Kruskall-Wallis
+
+#Por implementar
+#
+#
