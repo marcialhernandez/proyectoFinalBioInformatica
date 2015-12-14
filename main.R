@@ -7,11 +7,12 @@ library(Biobase)
 library(GEOquery)
 library(genefilter)
 #install.packages("ISLR")
+#install.packages("rgdal")
 #install.packages("pgirmess")
 library(ISLR)
 library(made4)
 library(ade4)
-#library(pgirmess)
+library(pgirmess)
 
 cargaDatos<- function(archivo) { load(archivo); as.list(environment()) }
 
@@ -82,11 +83,28 @@ for(filaGen in 1:cantidadGenes) {
 print (paste("Cantidad de datos con pvalue < 0.05: ",cantidadOK))
 
 #Proceso de ordenamiento por pValue
-#Falta ordenar segun el pvalue obtenido, el metodo comentado no funciona
-#probes<-dataComplete.affy[order(pvalue)]
+probes<-dataComplete.affy[order(pvalue),]
 
 #Proceso de diferenciacion multiclase usando Kruskall-Wallis
+#-------------------->>>> En proceso <<<<<----------------
 
-#Por implementar
-#
-#
+cantidadGenesARevisar<-30
+
+for(a in 1:cantidadGenesARevisar)
+  {
+  tablaK<-c()
+  contador<-1
+  for (clase in nombresClasesSinRepeticion){
+    #tablaK[[nombresClasesSinRepeticion[contador]]]<-probes[filaGen,][matrizUbicacionesClases[[contador]]]
+    tablaK=c(tablaK,probes[filaGen,][matrizUbicacionesClases[[contador]]])
+    contador<-contador+1
+  }
+  tablaK<-data.frame(cbind(tablaK,nombresClases))
+  print(kruskalmc(tablaK,categ = nombresClasesSinRepeticion))
+  
+  #print(kruskalmc(tablaK[,1], probs = 0.05))
+  #pvalue[filaGen]<-kruskal.test(tabla)$p.value
+  #mat_exp_t=c(mat_exp[a,c0],mat_exp[a,c1],mat_exp[a,c2],mat_exp[a,c3])
+  #tabla<-data.frame(cbind(mat_exp_t,clase))
+  #print(kruskalmc(tabla[,1]~clase,data=tabla))
+}
