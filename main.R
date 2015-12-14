@@ -86,25 +86,37 @@ print (paste("Cantidad de datos con pvalue < 0.05: ",cantidadOK))
 probes<-dataComplete.affy[order(pvalue),]
 
 #Proceso de diferenciacion multiclase usando Kruskall-Wallis
-#-------------------->>>> En proceso <<<<<----------------
 
-cantidadGenesARevisar<-30
+cantidadGenesARevisar<-10
+genesDiferenciadores<-c()
 
-for(a in 1:cantidadGenesARevisar)
+#Para cada gen de la matriz probes (que corresponde a la matriz de genes ordenada por Pvalue)
+for(filaGen in 1:cantidadGenesARevisar)
   {
-  tablaK<-c()
+  #Modo Lista
+  tablaK<-list()
+  #Modo Vector
+  #tablaK<-c()
   contador<-1
+  #Se crea una lista con la fila actual, para agrupar las distintas clases
   for (clase in nombresClasesSinRepeticion){
-    #tablaK[[nombresClasesSinRepeticion[contador]]]<-probes[filaGen,][matrizUbicacionesClases[[contador]]]
-    tablaK=c(tablaK,probes[filaGen,][matrizUbicacionesClases[[contador]]])
+    tablaK[[nombresClasesSinRepeticion[contador]]]<-probes[filaGen,][matrizUbicacionesClases[[contador]]]
+    #tablaK=c(tablaK,probes[filaGen,][matrizUbicacionesClases[[contador]]])
     contador<-contador+1
   }
-  tablaK<-data.frame(cbind(tablaK,nombresClases))
-  print(kruskalmc(tablaK,categ = nombresClasesSinRepeticion))
-  
-  #print(kruskalmc(tablaK[,1], probs = 0.05))
-  #pvalue[filaGen]<-kruskal.test(tabla)$p.value
-  #mat_exp_t=c(mat_exp[a,c0],mat_exp[a,c1],mat_exp[a,c2],mat_exp[a,c3])
-  #tabla<-data.frame(cbind(mat_exp_t,clase))
-  #print(kruskalmc(tabla[,1]~clase,data=tabla))
+  cantidadDiferenciasEncontradas<-0
+  #Se aplica Kruskall-Wallis al vector agrupado por clase
+  datosKruskalWallis<-kruskalmc(nombresClases,categ=nombresClases,data=tablaK)
+  for (numeroFila in  1:dim(datosKruskalWallis$dif.com)[1]){
+    #Si la fila corresponde a la comparacion de CNS y comprueba la diferencia significativa mediante TRUE
+    if (length(grep("CNS",rownames(datosKruskalWallis$dif.com)[numeroFila]))>0&datosKruskalWallis$dif.com$difference[numeroFila]==TRUE) {
+      #Se indica mediante un contador
+      cantidadDiferenciasEncontradas<-cantidadDiferenciasEncontradas+1
+    }
+  }
+  #Si la cantidad de diferencias significativas son igual o mayores a dos
+  if (cantidadDiferenciasEncontradas>=2){
+    #Pues, el gen representa en parte
+    genesDiferenciadores<-c(genesDiferenciadores,rownames(probes)[filaGen])
+  }
 }
