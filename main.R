@@ -3,18 +3,140 @@ source("http://www.bioconductor.org/biocLite.R")
 #biocLite("GEOquery")
 #biocLite("genefilter")
 #biocLite("made4")
+#install.packages( pkgs= "gplots")
 library(Biobase)
 library(GEOquery)
 library(genefilter)
 #install.packages("ISLR")
 #install.packages("rgdal")
 #install.packages("pgirmess")
+#install.packages("agricolae")
+#install.packages("nortest")
 library(ISLR)
 library(made4)
 library(ade4)
 library(pgirmess)
+library(agricolae)
+require (nortest)
+library(gplots)
+
+############ Funciones ############ 
 
 cargaDatos<- function(archivo) { load(archivo); as.list(environment()) }
+
+#Proceso de demostracion de normalidad
+
+pruebaNormalidad<-function(filaNumerica){
+  if (shapiro.test(filaNumerica)$p.value>0.1 & ad.test(filaNumerica)$p.value>0.1 & lillie.test(filaNumerica)$p.value>0.1){
+    return (TRUE)
+  }
+  
+  else{
+    return (FALSE)
+  }
+}
+
+pruebaHomocedasticidad<-function(filaLista){
+  if (var.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$BREAST))$p.value>0.1 & var.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$CNS))$p.value>0.1 & var.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$COLON))$p.value>0.1 & var.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$LEUK))$p.value>0.1 & var.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$MELAN))$p.value>0.1 & var.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$OVAR))$p.value>0.1 & var.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$PROSTATE))$p.value>0.1 & var.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$RENAL))$p.value>0.1){
+    return (TRUE)
+  }
+  
+  else{
+    return (FALSE)
+  }
+}
+
+#Pruebas t-student de a pares entre el cancer de pulmon y todos los otros tipos de cancer
+#Para filas que hayan pasado las pruebas de normalidad y homocedasticidad
+#El criterio a seguir es que si existen diferencias significativas con por lo menos
+#dos tipos de cancer diferentes, se considera como un gen diferenciador del cancer de pulmon
+pruebaDifSignificativasCancer<-function(filaLista,nombreGenActual){
+  cantidadDiferenciasSignificativas<-0
+  NSCLCBREAST<-t.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$BREAST),var.equal = TRUE)$p.value
+  NSCLCCNS<-t.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$CNS),var.equal = TRUE)$p.value
+  NSCLCCOLON<-t.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$COLON),var.equal = TRUE)$p.value
+  NSCLCLEUK<-t.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$LEUK),var.equal = TRUE)$p.value
+  NSCLCMELAN<-t.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$MELAN),var.equal = TRUE)$p.value
+  NSCLCOVAR<-t.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$OVAR),var.equal = TRUE)$p.value
+  NSCLCPROSTATE<-t.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$PROSTATE),var.equal = TRUE)$p.value
+  NSCLCRENAL<-t.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$RENAL),var.equal = TRUE)$p.value
+  if (NSCLCBREAST<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (NSCLCCNS<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (NSCLCCOLON<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (NSCLCLEUK<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (NSCLCMELAN<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (NSCLCOVAR<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (NSCLCPROSTATE<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (NSCLCRENAL<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (cantidadDiferenciasSignificativas>=3){
+    datosGenesParametricos<-paste("BREAST - NSCLC ",NSCLCBREAST,"\n","CNS - NSCLC ",NSCLCCNS,"\n","COLON - NSCLC ",NSCLCCOLON,"\n","LEUK - NSCLC ",NSCLCLEUK,"\n","MELAN - NSCLC ",NSCLCMELAN,"\n","NSCLC - OVAR ",NSCLCOVAR,"\n","NSCLC - PROSTATE ",NSCLCPROSTATE,"\n","NSCLC - RENAL ",NSCLCRENAL)
+    logFile <- file(paste("genesDiferenciadoresParametricos/",nombreGenActual,".txt"))
+    write(datosGenesParametricos,file=logFile,append=FALSE)
+    close(logFile)
+    return (TRUE)
+  }
+  else{
+    return (FALSE)
+  }
+}
+
+#Pruebas Wilcoxon Signed-Rank Test de a pares entre el cancer de pulmon y todos los otros tipos de cancer
+#Para filas que no hayan pasado las pruebas de normalidad y homocedasticidad
+#El criterio a seguir es que si existen diferencias significativas con por lo menos
+#dos tipos de cancer diferentes, se considera como un gen diferenciador del cancer de pulmon
+#Con atributo paired = FALSE, es equivalente a Mann-Whitney test
+#https://stat.ethz.ch/R-manual/R-devel/library/stats/html/wilcox.test.html
+pruebaDifSignificativasCancerNonNormal<-function(filaLista){
+  cantidadDiferenciasSignificativas<-0
+  if (wilcox.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$BREAST),paired=FALSE)$p.value<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (wilcox.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$CNS),paired=FALSE)$p.value<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (wilcox.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$COLON),paired=FALSE)$p.value<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (wilcox.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$LEUK),paired=FALSE)$p.value<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (wilcox.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$MELAN),paired=FALSE)$p.value<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (wilcox.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$OVAR),paired=FALSE)$p.value<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (wilcox.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$PROSTATE),paired=FALSE)$p.value<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (wilcox.test(as.numeric(filaLista$NSCLC),as.numeric(filaLista$RENAL),paired=FALSE)$p.value<0.01){
+    cantidadDiferenciasSignificativas<-cantidadDiferenciasSignificativas+1
+  }
+  if (cantidadDiferenciasSignificativas>=3){
+    return (TRUE)
+  }
+  else{
+    return (FALSE)
+  }
+}
+
+############ Main ############ 
 
 #Datos previo procesamiento de made4 <- Affy
 dataLibreriaISLR<-assayData(NCI60)
@@ -85,38 +207,101 @@ print (paste("Cantidad de datos con pvalue < 0.05: ",cantidadOK))
 #Proceso de ordenamiento por pValue
 probes<-dataComplete.affy[order(pvalue),]
 
-#Proceso de diferenciacion multiclase usando Kruskall-Wallis
+# pValuesPorProbe<-c()
+# cuentaAnormalidades<-0
+# demostracionesHipotesisNormalidad<-list()
+# for (probe in 1:dim(probes)[1]){
+#   #pValuesPorProbe<-c(shapiro.test(as.numeric(probes[probe,]))$p.value,ad.test(as.numeric(probes[probe,]))$p.value,lillie.test(as.numeric(probes[probe,]))$p.value)
+#   demostracionesHipotesisNormalidad[probe]<-pruebaNormalidad(as.numeric(probes[probe,]))
+#   #for (valorHipotesis in 1:3){
+#   #  if (pValuesPorProbe[valorHipotesis]<0.01){
+#   #    demostracionesHipotesisNormalidad[probe]<-FALSE
+#   #  }
+#   #}
+#   if (demostracionesHipotesisNormalidad[probe]==FALSE){
+#     cuentaAnormalidades<-cuentaAnormalidades+1
+#   }
+# }
+# if (cuentaAnormalidades>dim(probes)[2]/2){
+#   print ("Los datos tienden a tener una distribucion anormal")
+# }
 
-cantidadGenesARevisar<-10
-genesDiferenciadores<-c()
+#Proceso de diferenciacion multiclase
 
+cantidadGenesARevisar<-cantidadOK
+#cantidadGenesARevisar<-30
+genesDiferenciadoresDistAnormal<-c()
+cantidadGenesDistNormal<-0
+cantidadGenesDistANormal<-0
+genesDiferenciadoresDistNormal<-c()
+demostracionesHipotesisNormalidad<-list()
 #Para cada gen de la matriz probes (que corresponde a la matriz de genes ordenada por Pvalue)
 for(filaGen in 1:cantidadGenesARevisar)
   {
   #Modo Lista
   tablaK<-list()
   #Modo Vector
-  #tablaK<-c()
+  tablaVector<-c()
   contador<-1
   #Se crea una lista con la fila actual, para agrupar las distintas clases
   for (clase in nombresClasesSinRepeticion){
     tablaK[[nombresClasesSinRepeticion[contador]]]<-probes[filaGen,][matrizUbicacionesClases[[contador]]]
-    #tablaK=c(tablaK,probes[filaGen,][matrizUbicacionesClases[[contador]]])
+    tablaVector=c(tablaVector,probes[filaGen,][matrizUbicacionesClases[[contador]]])
     contador<-contador+1
   }
-  cantidadDiferenciasEncontradas<-0
   #Se aplica Kruskall-Wallis al vector agrupado por clase
-  datosKruskalWallis<-kruskalmc(nombresClases,categ=nombresClases,data=tablaK)
-  for (numeroFila in  1:dim(datosKruskalWallis$dif.com)[1]){
-    #Si la fila corresponde a la comparacion de CNS y comprueba la diferencia significativa mediante TRUE
-    if (length(grep("CNS",rownames(datosKruskalWallis$dif.com)[numeroFila]))>0&datosKruskalWallis$dif.com$difference[numeroFila]==TRUE) {
-      #Se indica mediante un contador
-      cantidadDiferenciasEncontradas<-cantidadDiferenciasEncontradas+1
+  #datosKruskalWallis<-kruskalmc(nombresClases,categ=nombresClases,data=tablaK,probs=0.1)
+  
+  if (pruebaNormalidad(as.numeric(probes[filaGen,]))==TRUE & pruebaHomocedasticidad(tablaK)==TRUE){
+    print (paste("fila ",filaGen," - gen: ",rownames(probes)[filaGen]," cumple condiciones One Way ANOVA"))
+    demostracionesHipotesisNormalidad[filaGen]<-TRUE
+    #Proceso de diferenciacion multiclase usando t-students multiples
+    cantidadGenesDistNormal<-cantidadGenesDistNormal+1
+    if (pruebaDifSignificativasCancer(tablaK,rownames(probes)[filaGen])==TRUE){
+      #Implica datos parametricos
+      #Proceso de diferenciacion multiclase usando multiples t-student (Cancer de pulmon contra todos)
+      genesDiferenciadoresDistNormal<-c(genesDiferenciadoresDistNormal,rownames(probes)[filaGen])
     }
   }
-  #Si la cantidad de diferencias significativas son igual o mayores a dos
-  if (cantidadDiferenciasEncontradas>=2){
-    #Pues, el gen representa en parte
-    genesDiferenciadores<-c(genesDiferenciadores,rownames(probes)[filaGen])
+  
+  else{ 
+    #Implica datos no parametricos
+    #Proceso de diferenciacion multiclase usando Kruskall-Wallis
+    print (paste("fila ",filaGen," - gen: ",rownames(probes)[filaGen]," cumple condiciones Kruskall-Wallis"))
+    demostracionesHipotesisNormalidad[filaGen]<-FALSE
+    cantidadGenesDistANormal<-cantidadGenesDistANormal+1
+    cantidadDiferenciasEncontradas<-0
+    #Vector que contendra las filas de las comparaciones con el tipo de cancer de pulmon, en caso que sea significativo, se guardara
+    #informeTemporal<-c(paste("gen: ",rownames(probes)[filaGen],"\n"))
+    informeTemporal<-c()
+    #datosKruskalWallis<-kruskalmc(nombresClases,categ=nombresClases,data=probes[filaGen,],probs=0.1) <<<<-- Metodo deshechado, pues no se puede cambiar el ajuste bonferroni a los pvalues
+    datosKruskalWallis<-kruskal(as.numeric(tablaVector),nombresClases,alpha=0.01,p.adj="BH",group=FALSE)
+    for (numeroFila in  1:dim(datosKruskalWallis$comparison)[1]){
+      #Si la fila corresponde a la comparacion de NSCLC y ademas tiene un pValue < 0.01
+      if (length(grep("NSCLC",rownames(datosKruskalWallis$comparison)[numeroFila]))>0) {
+        #print (datosKruskalWallis$comparison[numeroFila,])
+        #Se indica mediante un contador
+        informeTemporal<-c(informeTemporal,paste(rownames(datosKruskalWallis$comparison)[numeroFila],datosKruskalWallis$comparison[numeroFila,]$pvalue),"\n")
+        if (datosKruskalWallis$comparison[numeroFila,]$pvalue<0.01){
+        cantidadDiferenciasEncontradas<-cantidadDiferenciasEncontradas+1
+        }
+      }
+    }
+    #print (cantidadDiferenciasEncontradas)
+    #Si la cantidad de diferencias significativas son igual o mayores a dos
+    if (cantidadDiferenciasEncontradas>=3){
+      #Pues, el gen representa en parte
+      genesDiferenciadoresDistAnormal<-c(genesDiferenciadoresDistAnormal,rownames(probes)[filaGen])
+      logFile <- file(paste("genesDiferenciadoresNoParametricos/",rownames(probes)[filaGen],".txt"))
+      write(paste(informeTemporal),file=logFile,append=FALSE)
+      close(logFile)
+    }
   }
+  print ("__________________")
+  
 }
+
+print ("GenesComportamientoParametricoDiferenciadores: ")
+print (paste(genesDiferenciadoresDistNormal))
+print ("GenesComportamientoNoParametricoDiferenciadores: ")
+print (paste(genesDiferenciadoresDistAnormal))
