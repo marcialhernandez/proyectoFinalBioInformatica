@@ -112,7 +112,7 @@ for(i in 1:cantidadGenes){
   else{
     #Con atributo paired = FALSE, es equivalente a Mann-Whitney test
     #https://stat.ethz.ch/R-manual/R-devel/library/stats/html/wilcox.test.html
-    pvalue[i]<-round(wilcox.test(mat_exp[i,c2], mat_exp[i,c1],paired=FALSE)$p.value, digits=15)
+    pvalue[i]<-wilcox.test(mat_exp[i,c2], mat_exp[i,c1],paired=FALSE)$p.value
   }
 }
 
@@ -122,8 +122,16 @@ mapeadoColor<-unlist(lapply(clases, asignaColor))
 mat_exp2<-mat_exp[order(pvalue),]
 pvalue<-pvalue[order(pvalue)]
 
-print ("[Validacion] Imprime una porcion de la matriz de expresion ordenada por Pvalue")
-print(mat_exp2[1:50,1:5])
+
+ExpresionInvestigacion2 <- data.frame(rownames(mat_exp2),pvalue)
+colnames(ExpresionInvestigacion2)<-c("Gen","pValue")
+
+print ("[Validacion] Los 15 genes mas expresados son: ")
+print(ExpresionInvestigacion2[1:15,1:2])
+
+logFile3 <- file("InvestigacionRelacionada2-GDS2489/GenesExpresados.txt")
+write.table(ExpresionInvestigacion2[1:200,1:2],file=logFile3,append=FALSE,sep="\t")
+close(logFile3)
 
 print ("Creando EuclidianHeatMapInvest2.pdf")
 pdf("EuclidianHeatMapInvest2.pdf", paper="a4", width=8, height=8)
