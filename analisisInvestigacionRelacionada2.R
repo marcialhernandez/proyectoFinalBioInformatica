@@ -131,10 +131,11 @@ print(ExpresionInvestigacion2[1:15,1:2])
 
 logFile3 <- file("InvestigacionRelacionada2-GDS2489/GenesExpresados.txt")
 write.table(ExpresionInvestigacion2[1:200,1:2],file=logFile3,append=FALSE,sep="\t")
-close(logFile3)
+#close(logFile3)
 
 print ("Creando EuclidianHeatMapInvest2.pdf")
 pdf("EuclidianHeatMapInvest2.pdf", paper="a4", width=8, height=8)
+#png("EuclidianHeatMapInvest2.png")
 euclidianHeatMap<-heatmap.2(mat_exp2[1:30,],col=greenred(50),xlab='',ylab='',
                                          labRow=rownames(mat_exp2[1:30,]),ColSideColors=mapeadoColor, scale="row", key=TRUE,
                                          symkey=FALSE, density.info="none", trace="none", cexRow=0.5,

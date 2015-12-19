@@ -305,3 +305,13 @@ print ("GenesComportamientoParametricoDiferenciadores: ")
 print (paste(genesDiferenciadoresDistNormal))
 print ("GenesComportamientoNoParametricoDiferenciadores: ")
 print (paste(genesDiferenciadoresDistAnormal))
+
+# print ("Creando ClusterizacionKMeans.pdf")
+# pdf("ClusterizacionKMeansInvestigacionPrincipal.pdf", paper="a4", width=8, height=8)
+# mat_exp3 <- t(mat_exp2[1:200,])[,nrow(mat_exp2[1:200,]):1]
+# cl <- kmeans(mat_exp3, 2)
+# grafico<-plot(mat_exp3, col = cl$cluster, type='n')
+# text(mat_exp3, labels=muestras.clases2, col=cl$cluster)
+# points(cl$centers, col = 1:2, pch = 16, cex = 2)
+# title(main="Aplicacion de K-means")
+# dev.off()

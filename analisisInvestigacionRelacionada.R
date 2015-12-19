@@ -181,6 +181,9 @@ pvalueConTratamiento<-pvalueConTratamiento[order(pvalueConTratamiento)]
 ExpresionInvestigacion1SinTratamiento <- data.frame(rownames(mat_exp2),pvalueSinTratamiento)
 ExpresionInvestigacion1ConTratamiento <- data.frame(rownames(mat_exp3),pvalueConTratamiento)
 
+mapeadoColorConTratamiento<-unlist(lapply(clases, asignaColorConTratamiento))
+mapeadoColorSinTratamiento<-unlist(lapply(clases, asignaColorSinTratamiento))
+
 print ("[Validacion] Los 15 genes mas expresados del conjunto de datos sin tratamiento son: ")
 print(ExpresionInvestigacion1SinTratamiento[1:15,1:2])
 
@@ -194,3 +197,25 @@ write.table(ExpresionInvestigacion1SinTratamiento[1:200,1:2],file=logFile1,appen
 logFile2 <- file("InvestigacionRelacionada1-GDS1204/GenesExpresadosConTratamiento.txt")
 write.table(ExpresionInvestigacion1ConTratamiento[1:200,1:2],file=logFile2,append=FALSE,sep="\t")
 #close(logFile2)
+
+#c(c1,c2,c3) corresponde al grupo sin tratamiento
+print ("Creando EuclidianHeatMapInvest1SinTratamiento")
+pdf("EuclidianHeatMapInvest1SinTratamiento.pdf", paper="a4", width=8, height=8)
+#png("EuclidianHeatMapInvest1SinTratamiento.png")
+euclidianHeatMap<-heatmap.2(mat_exp2[1:30,c(c1,c2,c3)],col=greenred(50),xlab='',ylab='',
+                            labRow=rownames(mat_exp2[1:30,]),ColSideColors=mapeadoColorSinTratamiento[c(c1,c2,c3)], scale="row", key=TRUE,
+                            symkey=FALSE, density.info="none", trace="none", cexRow=0.5,
+                            distfun = function(x) dist(x,method = 'euclidean'),labCol=colnames(mat_exp2[1:30,c(c1,c2,c3)]),
+                            hclustfun = function(x) hclust(x,method = 'complete'))
+dev.off()
+
+#c(c4,c5,c6) corresponde al grupo con tratamiento
+print ("Creando EuclidianHeatMapInvest1ConTratamiento")
+pdf("EuclidianHeatMapInvest1ConTratamiento.pdf", paper="a4", width=8, height=8)
+#png("EuclidianHeatMapInvest1ConTratamiento.png")
+euclidianHeatMap<-heatmap.2(mat_exp3[1:30,c(c4,c5,c6)],col=greenred(50),xlab='',ylab='',
+                            labRow=rownames(mat_exp2[1:30,]),ColSideColors=mapeadoColorConTratamiento[c(c4,c5,c6)], scale="row", key=TRUE,
+                            symkey=FALSE, density.info="none", trace="none", cexRow=0.5,
+                            distfun = function(x) dist(x,method = 'euclidean'),labCol=colnames(mat_exp2[1:30,c(c4,c5,c6)]),
+                            hclustfun = function(x) hclust(x,method = 'complete'))
+dev.off()
