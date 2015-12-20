@@ -214,8 +214,8 @@ print ("Creando EuclidianHeatMapInvest1ConTratamiento")
 pdf("EuclidianHeatMapInvest1ConTratamiento.pdf", paper="a4", width=8, height=8)
 #png("EuclidianHeatMapInvest1ConTratamiento.png")
 euclidianHeatMap<-heatmap.2(mat_exp3[1:30,c(c4,c5,c6)],col=greenred(50),xlab='',ylab='',
-                            labRow=rownames(mat_exp2[1:30,]),ColSideColors=mapeadoColorConTratamiento[c(c4,c5,c6)], scale="row", key=TRUE,
+                            labRow=rownames(mat_exp3[1:30,]),ColSideColors=mapeadoColorConTratamiento[c(c4,c5,c6)], scale="row", key=TRUE,
                             symkey=FALSE, density.info="none", trace="none", cexRow=0.5,
-                            distfun = function(x) dist(x,method = 'euclidean'),labCol=colnames(mat_exp2[1:30,c(c4,c5,c6)]),
+                            distfun = function(x) dist(x,method = 'euclidean'),labCol=colnames(mat_exp3[1:30,c(c4,c5,c6)]),
                             hclustfun = function(x) hclust(x,method = 'complete'))
 dev.off()

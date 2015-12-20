@@ -22,6 +22,16 @@ library(gplots)
 
 ############ Funciones ############ 
 
+asignaColor <- function(valorClase) { 
+  if (valorClase==1){
+    return ("#FF0000") 
+  }
+  
+  else {
+    return ("#0000FF")
+  }
+}
+
 cargaDatos<- function(archivo) { load(archivo); as.list(environment()) }
 
 #Proceso de demostracion de normalidad
@@ -233,6 +243,7 @@ cantidadGenesARevisar<-cantidadOK
 genesDiferenciadoresDistAnormal<-c()
 cantidadGenesDistNormal<-0
 cantidadGenesDistANormal<-0
+posGenesDiferenciadores<-c()
 genesDiferenciadoresDistNormal<-c()
 demostracionesHipotesisNormalidad<-list()
 #Para cada gen de la matriz probes (que corresponde a la matriz de genes ordenada por Pvalue)
@@ -258,6 +269,7 @@ for(filaGen in 1:cantidadGenesARevisar)
     #Proceso de diferenciacion multiclase usando t-students multiples
     cantidadGenesDistNormal<-cantidadGenesDistNormal+1
     if (pruebaDifSignificativasCancer(tablaK,rownames(probes)[filaGen])==TRUE){
+      posGenesDiferenciadores<-c(posGenesDiferenciadores,filaGen)
       #Implica datos parametricos
       #Proceso de diferenciacion multiclase usando multiples t-student (Cancer de pulmon contra todos)
       genesDiferenciadoresDistNormal<-c(genesDiferenciadoresDistNormal,rownames(probes)[filaGen])
@@ -292,6 +304,7 @@ for(filaGen in 1:cantidadGenesARevisar)
     if (cantidadDiferenciasEncontradas>=3){
       #Pues, el gen representa en parte
       genesDiferenciadoresDistAnormal<-c(genesDiferenciadoresDistAnormal,rownames(probes)[filaGen])
+      posGenesDiferenciadores<-c(posGenesDiferenciadores,filaGen)
       logFile <- file(paste("genesDiferenciadoresNoParametricos/",rownames(probes)[filaGen],".txt"))
       write(paste(informeTemporal),file=logFile,append=FALSE)
       close(logFile)
@@ -301,17 +314,43 @@ for(filaGen in 1:cantidadGenesARevisar)
   
 }
 
+#Reasignacion de grupos, generacion de los grupos "cancer de pulmon", y cualquier otro
+
+nombresClasesSimple<-c()
+for(filaClase in 1:length(nombresClases)){
+  if (nombresClases[filaClase]=="NSCLC"){
+    nombresClasesSimple<-c(nombresClasesSimple,1)
+  }
+  else{
+    nombresClasesSimple<-c(nombresClasesSimple,2)
+  }
+}
+
+mapeadoColor<-unlist(lapply(nombresClasesSimple, asignaColor))
+
 print ("GenesComportamientoParametricoDiferenciadores: ")
 print (paste(genesDiferenciadoresDistNormal))
 print ("GenesComportamientoNoParametricoDiferenciadores: ")
 print (paste(genesDiferenciadoresDistAnormal))
 
-# print ("Creando ClusterizacionKMeans.pdf")
-# pdf("ClusterizacionKMeansInvestigacionPrincipal.pdf", paper="a4", width=8, height=8)
-# mat_exp3 <- t(mat_exp2[1:200,])[,nrow(mat_exp2[1:200,]):1]
-# cl <- kmeans(mat_exp3, 2)
-# grafico<-plot(mat_exp3, col = cl$cluster, type='n')
-# text(mat_exp3, labels=muestras.clases2, col=cl$cluster)
-# points(cl$centers, col = 1:2, pch = 16, cex = 2)
-# title(main="Aplicacion de K-means")
-# dev.off()
+print ("Creando ClusterizacionKMeans.pdf")
+pdf("ClusterizacionKMeansInvestigacionPrincipal.pdf", paper="a4", width=8, height=8)
+probes2<-probes[posGenesDiferenciadores,]
+probes3<-t(probes2)[,nrow(probes2):1]
+#probes2<-probes[1:15,]
+clusterizacionKmedias <- kmeans (probes3,2)
+grafico<-plot(probes3, col = clusterizacionKmedias$cluster, type="n")
+text(probes3,labels=nombresClasesSimple,col=clusterizacionKmedias$cluster)
+points(clusterizacionKmedias$centers, col = 1:2, pch = 16, cex = 2)
+title(main="Grafico de K-medias en la investigacion principal")
+dev.off()
+
+print ("Creando EuclidianHeatMapInvestPrincipal")
+pdf("EuclidianHeatMapInvestPrincipal.pdf", paper="a4", width=8, height=8)
+#png("EuclidianHeatMapInvest1ConTratamiento.png")
+euclidianHeatMap<-heatmap.2(data.matrix(probes2),col=greenred(50),xlab='',ylab='',
+                            labRow=rownames(probes2),ColSideColors=mapeadoColor, scale="row", key=TRUE,
+                            symkey=FALSE, density.info="none", trace="none", cexRow=0.5,
+                            distfun = function(x) dist(x,method = 'euclidean'),labCol=colnames(probes2),
+                            hclustfun = function(x) hclust(x,method = 'complete'))
+dev.off()
